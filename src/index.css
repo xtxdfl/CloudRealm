@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#020617] text-slate-200;
+  }
+}
+
+/* Custom Scrollbar for Dark Theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-[#0f172a];
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-[#1e293b] rounded-full hover:bg-[#334155];
+}
+
+/* Glassmorphism Utilities - Darker */
+.glass-panel {
+  @apply bg-[#0f172a]/80 backdrop-blur-xl border border-white/5 shadow-xl;
+}
+
+.glass-card {
+  @apply bg-[#1e293b]/50 backdrop-blur-md border border-white/5 shadow-lg hover:bg-[#1e293b]/70 hover:border-[#00ff9d]/30 transition-all duration-300;
+}
+
+.neon-text {
+  text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+}
+
+.neon-border {
+  box-shadow: 0 0 10px rgba(0, 255, 157, 0.2);
+}
+
+/* Cyberpunk / Tech Background Effects */
+.cyber-grid {
+  background-size: 40px 40px;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+}
+
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.scanline-overlay {
+  background: linear-gradient(
+    to bottom,
+    transparent 50%,
+    rgba(0, 255, 157, 0.02) 50%
+  );
+  background-size: 100% 4px;
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+.tech-border-corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #00ff9d;
+  transition: all 0.3s ease;
+}
+
+.tech-input:focus ~ .tech-border-corner {
+  width: 100%;
+  height: 100%;
+  border-color: #38bdf8;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+}
