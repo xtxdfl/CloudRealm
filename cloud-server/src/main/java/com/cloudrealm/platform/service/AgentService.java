@@ -70,8 +70,9 @@ public class AgentService {
                 commandRepository.findById(report.getTaskId()).ifPresent(cmd -> {
                     cmd.setStatus(report.getStatus());
                     cmd.setExitcode(report.getExitCode());
-                    cmd.setStdOut(report.getStdout());
-                    cmd.setStdError(report.getStderr());
+                    if (report.getStdout() != null) cmd.setStdOut(report.getStdout().getBytes());
+                    if (report.getStderr() != null) cmd.setStdError(report.getStderr().getBytes());
+                    
                     if ("COMPLETED".equals(report.getStatus()) || "FAILED".equals(report.getStatus())) {
                         cmd.setEndTime(System.currentTimeMillis());
                     }

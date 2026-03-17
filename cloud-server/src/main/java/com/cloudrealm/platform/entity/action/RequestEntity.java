@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "requests")
+@Table(name = "request")
 public class RequestEntity {
     
     @Id
@@ -16,18 +16,44 @@ public class RequestEntity {
     @Column(name = "cluster_id")
     private Long clusterId;
 
-    @Column(name = "request_context")
-    private String requestContext;
+    @Column(name = "request_schedule_id")
+    private Long requestScheduleId;
 
-    @Column(name = "start_time")
-    private Long startTime;
+    @Column(name = "command_name")
+    private String commandName;
+
+    @Column(name = "create_time")
+    private Long createTime;
 
     @Column(name = "end_time")
     private Long endTime;
 
+    @Column(name = "exclusive_execution")
+    private Integer exclusiveExecution = 0;
+
+    @Column(name = "inputs", columnDefinition = "LONGBLOB")
+    @Lob
+    private byte[] inputs;
+
+    @Column(name = "request_context")
+    private String requestContext;
+
+    @Column(name = "request_type")
+    private String requestType;
+
+    @Column(name = "start_time")
+    private Long startTime;
+
     @Column(name = "status")
-    private String status; // PENDING, IN_PROGRESS, COMPLETED, FAILED
+    private String status = "PENDING"; // PENDING, IN_PROGRESS, COMPLETED, FAILED
+
+    @Column(name = "display_status")
+    private String displayStatus = "PENDING";
     
-    @Column(name = "inputs", columnDefinition = "LONGTEXT")
-    private String inputs;
+    @Column(name = "cluster_host_info", columnDefinition = "LONGBLOB")
+    @Lob
+    private byte[] clusterHostInfo;
+
+    @Column(name = "user_name")
+    private String userName;
 }
