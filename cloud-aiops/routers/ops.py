@@ -11,7 +11,7 @@ alerts_db = [
     Alert(id=2, level=AlertLevel.WARNING, message="YARN 队列 (root.default) 资源使用率 > 90%", source="YARN", timestamp="15分钟前"),
     Alert(id=3, level=AlertLevel.CRITICAL, message="Hive Metastore 连接超时", source="HIVE", timestamp="32分钟前"),
     Alert(id=4, level=AlertLevel.WARNING, message="Kafka Topic (logs) 消费积压", source="KAFKA", timestamp="1小时前"),
-    Alert(id=5, level=AlertLevel.INFO, message="集群配置变更：hdfs-site.xml", source="Ambari", timestamp="2小时前"),
+    Alert(id=5, level=AlertLevel.INFO, message="集群配置变更：hdfs-site.xml", source="Cloud", timestamp="2小时前"),
     Alert(id=6, level=AlertLevel.INFO, message="Spark Job (Daily-ETL) 完成", source="SPARK", timestamp="3小时前"),
 ]
 

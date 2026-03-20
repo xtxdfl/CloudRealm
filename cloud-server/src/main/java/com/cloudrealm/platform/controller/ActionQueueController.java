@@ -19,10 +19,11 @@ public class ActionQueueController {
 
     @PostMapping("/requests")
     public ResponseEntity<RequestEntity> createRequest(@RequestBody Map<String, Object> payload) {
-        String requestContext = (String) payload.getOrDefault("request_context", "Custom Action");
+        String requestContext = payload.getOrDefault("request_context", "Custom Action").toString();
+        @SuppressWarnings("unchecked")
         List<String> hosts = (List<String>) payload.get("hosts");
-        String role = (String) payload.get("role");
-        String command = (String) payload.get("command");
+        String role = payload.get("role").toString();
+        String command = payload.get("command").toString();
 
         RequestEntity request = actionQueueService.createActionRequest(requestContext, hosts, role, command);
         return ResponseEntity.ok(request);

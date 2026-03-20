@@ -173,10 +173,10 @@ CREATE TABLE `clusterstate` (
   `id` BIGINT NOT NULL  COMMENT '主键',
   `repo_version_id` BIGINT NOT NULL  COMMENT '关联的 repo\_version.repo\_version\_id（外键）',
   `family` VARCHAR(255) NOT NULL DEFAULT '''''' COMMENT '操作系统家族（如 RedHat, Ubuntu）',
-  `shpurdp_managed` TINYINT(1) NULL DEFAULT 1 COMMENT '是否由 Shpurdp 系统管理（0=否，1=是）',
+  `cloud_managed` TINYINT(1) NULL DEFAULT 1 COMMENT '是否由 Cloud 系统管理（0=否，1=是）',
   `id` BIGINT NOT NULL  COMMENT '主键',
   `repo_os_id` BIGINT NULL  COMMENT '关联的 repo\_os.id（外键，为空时表示适用于所有操作系统）',
-  `repo_name` VARCHAR(255) NOT NULL  COMMENT '仓库名称（如 HDP, Ambari）',
+  `repo_name` VARCHAR(255) NOT NULL  COMMENT '仓库名称（如 HDP, Cloud）',
   `repo_id` VARCHAR(255) NOT NULL  COMMENT '仓库唯一标识（如 HDP-3.1.0）',
   `base_url` MEDIUMTEXT NOT NULL  COMMENT '仓库基础访问URL（如 http://repo.example.com/hdp/centos7/3.1.0）',
   `distribution` MEDIUMTEXT NULL  COMMENT '发行版名称（如 centos7）',
@@ -265,7 +265,7 @@ CREATE TABLE `request` (
   `exclusive_execution` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否独占执行（0=否，1=是，避免并发冲突）',
   `inputs` LONGBLOB NULL  COMMENT '操作输入参数（序列化格式，如 JSON、Protobuf）',
   `request_context` VARCHAR(255) NULL  COMMENT '请求上下文标识（用于跟踪日志）',
-  `request_type` VARCHAR(255) NULL  COMMENT '请求类型（如 AMBARI, API）',
+  `request_type` VARCHAR(255) NULL  COMMENT '请求类型（如 CLOUD, API）',
   `start_time` BIGINT NOT NULL  COMMENT '请求开始执行时间戳',
   `status` VARCHAR(255) NOT NULL DEFAULT 'PENDING' COMMENT '请求状态（如 IN\_PROGRESS, COMPLETED）',
   `display_status` VARCHAR(255) NOT NULL DEFAULT 'PENDING' COMMENT '用户可见的请求状态（可能更友好的描述）',
@@ -594,7 +594,7 @@ CREATE TABLE `viewinstance` (
   `xml_driven` CHAR(1) NULL  COMMENT '是否由XML驱动（Y/N）',
   `alter_names` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否允许修改名称（0=否，1=是）',
   `cluster_handle` BIGINT NULL  COMMENT '关联集群句柄（保留字段）',
-  `cluster_type` VARCHAR(100) NOT NULL DEFAULT 'LOCAL\_shpurdp' COMMENT '集群类型（默认本地环境）',
+  `cluster_type` VARCHAR(100) NOT NULL DEFAULT 'LOCAL\_cloud' COMMENT '集群类型（默认本地环境）',
   `short_url` BIGINT NULL  COMMENT '短链ID（外键 ➔ viewurl.url\_id）',
   PRIMARY KEY (`view_instance_id`),
   UNIQUE KEY `UQ_viewinstance_name` (view_name, name),
@@ -783,21 +783,21 @@ CREATE TABLE `setting` (
   UNIQUE KEY `UQ_setting_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统设置表';
 
-DROP TABLE IF EXISTS `remoteshpurdpcluster`;
-CREATE TABLE `remoteshpurdpcluster` (
+DROP TABLE IF EXISTS `remotecloudcluster`;
+CREATE TABLE `remotecloudcluster` (
   `cluster_id` BIGINT NOT NULL  COMMENT '集群唯一ID（主键）',
   `name` VARCHAR(255) NOT NULL  COMMENT '集群名称（全局唯一）',
   `username` VARCHAR(255) NOT NULL  COMMENT '认证用户名',
   `url` VARCHAR(255) NOT NULL  COMMENT '集群API访问地址',
   `password` VARCHAR(255) NOT NULL  COMMENT '认证密码（建议加密存储）',
   PRIMARY KEY (`cluster_id`),
-  UNIQUE KEY `UQ_remote_shpurdp_cluster` (`name`)
+  UNIQUE KEY `UQ_remote_cloud_cluster` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='远程集群表';
 
-DROP TABLE IF EXISTS `remoteshpurdpclusterservice`;
-CREATE TABLE `remoteshpurdpclusterservice` (
+DROP TABLE IF EXISTS `remotecloudclusterservice`;
+CREATE TABLE `remotecloudclusterservice` (
   `id` BIGINT NOT NULL  COMMENT '服务关联ID（主键）',
-  `cluster_id` BIGINT NOT NULL  COMMENT '集群ID（外键 ➔ remoteshpurdpcluster.cluster\_id）',
+  `cluster_id` BIGINT NOT NULL  COMMENT '集群ID（外键 ➔ remotecloudcluster.cluster\_id）',
   `service_name` VARCHAR(255) NOT NULL  COMMENT '服务名称',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='远程集群服务表';

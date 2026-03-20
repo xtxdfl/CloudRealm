@@ -1,0 +1,230 @@
+#!/usr/bin/env python3
+"""
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+cloud Agent
+
+"""
+
+import sys
+import traceback
+from typing import Optional, Any, Dict, Union, List, TYPE_CHECKING
+from resource_management.core.logger import Logger
+
+# 类型检�?if TYPE_CHECKING:
+    from subprocess import Popen
+
+# 模块导出
+__all__ = [
+  "Fail",
+  "ExecutionFailed",
+  "ExecuteTimeoutException",
+  "InvalidArgument",
+  "ClientComponentHasNoStatus",
+  "ComponentIsNotRunning",
+]
+
+# 常量定义
+CAUSE_TRACEBACK_NONE = "None\n"
+
+
+class Fail(Exception):
+    """
+    cloud 核心异常基类
+    
+    职责�?    1. 自动捕获并保�?cause traceback
+    2. 提供 pre_raise() 钩子格式化输�?    3. 支持原因打印开关控�?    
+    属性：
+        print_cause: 是否打印 cause traceback
+        cause_traceback: 自动捕获的堆栈追踪字符串
+        message: 异常消息
+        
+    示例�?        try:
+            risky_operation()
+        except Exception:
+            raise Fail("操作失败")  # 自动捕获并打�?cause
+    """
+    
+    def __init__(
+        self,
+        message: Optional[str] = "",
+        print_cause: bool = True,
+        *args: Any,
+    ) -> None:
+        """
+        Args:
+            message: 异常消息
+            print_cause: 是否打印 cause traceback（默�?True�?            *args: 传递给父类的额外参�?        """
+        self.print_cause = print_cause
+        self.cause_traceback = traceback.format_exc()
+        
+        Logger.error(f"创建 Fail 异常: {message}")
+        Logger.debug(f"Cause traceback: {self.cause_traceback}")
+        
+        super().__init__(message, *args)
+
+    def pre_raise(self) -> None:
+        """
+        异常抛出前的钩子函数
+        
+        �?print_cause=True 且存�?cause traceback 时，
+        将格式化输出完整的异常链信息�?stderr�?        
+        输出格式�?            [Original Traceback]
+            
+            The above exception was the cause of the following exception:
+            
+            [Current Exception]
+        """
+        if self.print_cause and self.cause_traceback != CAUSE_TRACEBACK_NONE:
+            Logger.info("输出 cause traceback �?stderr")
+            sys.stderr.write(self.cause_traceback)
+            sys.stderr.write(
+                "\nThe above exception was the cause of the following exception:\n\n"
+            )
+    
+    def __str__(self) -> str:
+        """返回格式化异常消�?""
+        msg = super().__str__()
+        Logger.debug(f"Fail 异常字符串化: {msg}")
+        return msg
+
+
+class ExecuteTimeoutException(Fail):
+    """
+    执行超时异常
+    
+    当命令执行超过指定超时时间时抛出�?    常见于长时间运行�?shell 命令或阻塞操作�?    
+    继承�?Fail，自动捕�?cause traceback�?    
+    示例�?        try:
+            shell.checked_call(["sleep", "100"], timeout=5)
+        except ExecuteTimeoutException:
+            # 命令执行超时
+            pass
+    """
+    
+    def __init__(self, message: Optional[str] = "命令执行超时", **kwargs: Any) -> None:
+        Logger.error(f"创建 ExecuteTimeoutException: {message}")
+        super().__init__(message, **kwargs)
+
+
+class InvalidArgument(Fail):
+    """
+    无效参数异常
+    
+    当参数验证失败时抛出（类型错误、范围错误、格式错误）�?    用于资源参数、配置项、函数参数的校验�?    
+    继承�?Fail，自动捕�?cause traceback�?    
+    示例�?        def validate_port(port):
+            if not isinstance(port, int) or not (0 < port < 65536):
+                raise InvalidArgument(f"无效端口: {port}")
+    """
+    
+    def __init__(self, message: Optional[str] = "参数验证失败", **kwargs: Any) -> None:
+        Logger.error(f"创建 InvalidArgument: {message}")
+        super().__init__(message, **kwargs)
+
+
+class ClientComponentHasNoStatus(Fail):
+    """
+    CLIENT 组件无状态异�?    
+    当对 CLIENT 类型组件调用 status() 方法时抛出�?    CLIENT 组件唯一有效状态是 INSTALLED，因此抛出异常并�?script.py 中静默处理�?    
+    设计原因：CLIENT 组件无运行时进程，无法提�?RUNNING 等状态�?    
+    继承�?Fail，但不打�?cause traceback（print_cause=False）�?    
+    示例�?        class MyClient(Client):
+            def status(self, env):
+                # CLIENT 组件会抛出此异常
+                raise ClientComponentHasNoStatus()
+    """
+    
+    def __init__(self, message: Optional[str] = "CLIENT 组件无运行时状�?, **kwargs: Any) -> None:
+        Logger.warning(f"创建 ClientComponentHasNoStatus: {message}")
+        kwargs.setdefault('print_cause', False)  # 默认不打�?cause
+        super().__init__(message, **kwargs)
+
+
+class ComponentIsNotRunning(Fail):
+    """
+    组件未运行异�?    
+    当对组件调用 status() 方法且进程未运行时抛出�?    �?script.py 中静默处理，用于状态检测流程�?    
+    设计原因：区分组件未安装和已安装但未运行两种状态�?    
+    继承�?Fail，但不打�?cause traceback（print_cause=False）�?    
+    示例�?        class MyService(Service):
+            def status(self, env):
+                if not is_process_running(self.pid_file):
+                    raise ComponentIsNotRunning()
+    """
+    
+    def __init__(self, message: Optional[str] = "组件进程未运�?, **kwargs: Any) -> None:
+        Logger.warning(f"创建 ComponentIsNotRunning: {message}")
+        kwargs.setdefault('print_cause', False)  # 默认不打�?cause
+        super().__init__(message, **kwargs)
+
+
+class ExecutionFailed(Fail):
+    """
+    命令执行失败异常
+    
+    �?shell 命令返回非零退出码时抛出�?    包含退出码、stdout、stderr 等详细信息�?    
+    属性：
+        code: 命令退出码（int�?        out: 标准输出内容（str�?        err: 标准错误内容（str，可选）
+        exception_message: 异常消息
+        
+    继承�?Fail，自动捕�?cause traceback�?    
+    示例�?        try:
+            shell.checked_call(["ls", "/nonexistent"])
+        except ExecutionFailed as e:
+            print(f"退出码: {e.code}")
+            print(f"输出: {e.out}")
+            print(f"错误: {e.err}")
+    """
+    
+    def __init__(
+        self,
+        exception_message: str,
+        code: int,
+        out: str,
+        err: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Args:
+            exception_message: 异常消息
+            code: 命令退出码
+            out: 标准输出内容
+            err: 标准错误内容（默�?None�?            **kwargs: 传递给父类的额外参�?        """
+        self.exception_message = exception_message
+        self.code = code
+        self.out = out
+        self.err = err
+        
+        # 构建详细错误消息
+        detailed_msg = (
+            f"命令执行失败: {exception_message}\n"
+            f"退出码: {code}\n"
+            f"输出: {out[:500]}{'...' if len(out) > 500 else ''}\n"
+        )
+        if err:
+            detailed_msg += f"错误: {err[:500]}{'...' if len(err) > 500 else ''}\n"
+        
+        Logger.error(f"创建 ExecutionFailed: {detailed_msg}")
+        
+        super().__init__(detailed_msg, **kwargs)
+    
+    def __str__(self) -> str:
+        """返回包含退出码的格式化消息"""
+        base_msg = super().__str__()
+        return f"{base_msg} (退出码: {self.code})"
+

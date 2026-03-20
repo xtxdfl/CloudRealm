@@ -18,23 +18,17 @@
 -- DROP DATABASE IF EXISTS `cloud`;
 -- DROP USER `cloud`;
 
-# delimiter ;
+-- H2 database initialization (compatible mode)
 
-# CREATE DATABASE `cloud` /*!40100 DEFAULT CHARACTER SET utf8 */;
-#
-# CREATE USER 'cloud' IDENTIFIED BY 'bigdata';
-
-# USE @schema;
-
--- Set default_storage_engine to InnoDB
--- storage_engine variable should be used for versions prior to MySQL 5.6
-set @version_short = substring_index(@@version, '.', 2);
-set @major = cast(substring_index(@version_short, '.', 1) as SIGNED);
-set @minor = cast(substring_index(@version_short, '.', -1) as SIGNED);
-set @engine_stmt = IF((@major >= 5 AND @minor>=6) or @major >= 8, 'SET default_storage_engine=INNODB', 'SET storage_engine=INNODB');
-prepare statement from @engine_stmt;
-execute statement;
-DEALLOCATE PREPARE statement;
+-- Set default_storage_engine to InnoDB (H2 uses different engine)
+-- Commented out MySQL-specific statements not compatible with H2
+-- set @version_short = substring_index(@@version, '.', 2);
+-- set @major = cast(substring_index(@version_short, '.', 1) as SIGNED);
+-- set @minor = cast(substring_index(@version_short, '.', -1) as SIGNED);
+-- set @engine_stmt = IF((@major >= 5 AND @minor>=6) or @major >= 8, 'SET default_storage_engine=INNODB', 'SET storage_engine=INNODB');
+-- prepare statement from @engine_stmt;
+-- execute statement;
+-- DEALLOCATE PREPARE statement;
 
 CREATE TABLE registries(
  id BIGINT NOT NULL,
@@ -142,25 +136,97 @@ CREATE TABLE serviceconfig (
   CONSTRAINT FK_serviceconfig_stack_id FOREIGN KEY (stack_id) REFERENCES stack(stack_id),
   CONSTRAINT UQ_scv_service_version UNIQUE (cluster_id, service_name, version));
 
+-- 主机表 - 扩展支持主机注册、心跳、标签管理
 CREATE TABLE hosts (
-  host_id BIGINT NOT NULL,
+  host_id BIGINT NOT NULL AUTO_INCREMENT,
   host_name VARCHAR(255) NOT NULL,
-  cpu_count INTEGER NOT NULL,
-  cpu_info VARCHAR(255) NOT NULL,
-  discovery_status VARCHAR(2000) NOT NULL,
-  host_attributes LONGTEXT NOT NULL,
   ipv4 VARCHAR(255),
   ipv6 VARCHAR(255),
-  last_registration_time BIGINT NOT NULL,
-  os_arch VARCHAR(255) NOT NULL,
-  os_info VARCHAR(1000) NOT NULL,
-  os_type VARCHAR(255) NOT NULL,
-  ph_cpu_count INTEGER,
   public_host_name VARCHAR(255),
-  rack_info VARCHAR(255) NOT NULL,
-  total_mem BIGINT NOT NULL,
+  cpu_count INTEGER NOT NULL DEFAULT 0,
+  cpu_info VARCHAR(255) NOT NULL DEFAULT '',
+  cpu_usage DECIMAL(5,2) DEFAULT 0.00,
+  total_mem BIGINT NOT NULL DEFAULT 0,
+  used_mem BIGINT DEFAULT 0,
+  memory_usage DECIMAL(5,2) DEFAULT 0.00,
+  total_disk BIGINT DEFAULT 0,
+  used_disk BIGINT DEFAULT 0,
+  disk_usage DECIMAL(5,2) DEFAULT 0.00,
+  os_type VARCHAR(255) NOT NULL DEFAULT 'Linux',
+  os_arch VARCHAR(255) NOT NULL DEFAULT 'x86_64',
+  os_info VARCHAR(1000) NOT NULL DEFAULT '',
+  discovery_status VARCHAR(2000) NOT NULL DEFAULT 'UNKNOWN',
+  host_attributes LONGTEXT NOT NULL DEFAULT '{}',
+  rack_info VARCHAR(255) NOT NULL DEFAULT '/default-rack',
+  last_registration_time BIGINT NOT NULL DEFAULT 0,
+  last_heartbeat_time BIGINT DEFAULT 0,
+  heartbeat_interval INT DEFAULT 30,
+  agent_version VARCHAR(50),
+  agent_status VARCHAR(20) DEFAULT 'OFFLINE',
+  disk_info VARCHAR(2000) DEFAULT '[]',
+  network_info VARCHAR(2000) DEFAULT '[]',
   CONSTRAINT PK_hosts PRIMARY KEY (host_id),
-  CONSTRAINT UQ_hosts_host_name UNIQUE (host_name));
+  CONSTRAINT UQ_hosts_host_name UNIQUE (host_name),
+  CONSTRAINT UQ_hosts_ipv4 UNIQUE (ipv4));
+
+-- 主机标签分类表（如：用途、环境、网络区域）
+CREATE TABLE host_tag_categories (
+  category_id BIGINT NOT NULL AUTO_INCREMENT,
+  category_name VARCHAR(100) NOT NULL,
+  category_type VARCHAR(50) NOT NULL COMMENT 'PURPOSE:用途, ENVIRONMENT:环境, REGION:区域, CUSTOM:自定义',
+  description VARCHAR(500),
+  color VARCHAR(20) DEFAULT '#6366f1',
+  sort_order INT DEFAULT 0,
+  created_time BIGINT NOT NULL DEFAULT 0,
+  updated_time BIGINT NOT NULL DEFAULT 0,
+  CONSTRAINT PK_host_tag_categories PRIMARY KEY (category_id),
+  CONSTRAINT UQ_category_name_type UNIQUE (category_name, category_type));
+
+-- 主机标签表
+CREATE TABLE host_tags (
+  tag_id BIGINT NOT NULL AUTO_INCREMENT,
+  tag_name VARCHAR(100) NOT NULL,
+  category_id BIGINT NOT NULL,
+  description VARCHAR(500),
+  color VARCHAR(20) DEFAULT '#6366f1',
+  created_time BIGINT NOT NULL DEFAULT 0,
+  updated_time BIGINT NOT NULL DEFAULT 0,
+  CONSTRAINT PK_host_tags PRIMARY KEY (tag_id),
+  CONSTRAINT UQ_tag_name_category UNIQUE (tag_name, category_id),
+  CONSTRAINT FK_tag_category FOREIGN KEY (category_id) REFERENCES host_tag_categories(category_id) ON DELETE CASCADE);
+
+-- 主机与标签关联表
+CREATE TABLE host_tag_mapping (
+  host_id BIGINT NOT NULL,
+  tag_id BIGINT NOT NULL,
+  assigned_time BIGINT NOT NULL DEFAULT 0,
+  assigned_by VARCHAR(255),
+  CONSTRAINT PK_host_tag_mapping PRIMARY KEY (host_id, tag_id),
+  CONSTRAINT FK_htm_host FOREIGN KEY (host_id) REFERENCES hosts(host_id) ON DELETE CASCADE,
+  CONSTRAINT FK_htm_tag FOREIGN KEY (tag_id) REFERENCES host_tags(tag_id) ON DELETE CASCADE);
+
+-- 主机注册来源记录表
+CREATE TABLE host_registration_log (
+  reg_id BIGINT NOT NULL AUTO_INCREMENT,
+  host_id BIGINT,
+  host_name VARCHAR(255) NOT NULL,
+  ipv4 VARCHAR(255),
+  registration_type VARCHAR(50) NOT NULL COMMENT 'AUTO_DISCOVER:自动发现, MANUAL:手动添加, BATCH_IMPORT:批量导入, AGENT_AUTO:Agent自动注册',
+  source_ip VARCHAR(255),
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  error_message VARCHAR(1000),
+  registered_time BIGINT NOT NULL DEFAULT 0,
+  CONSTRAINT PK_host_registration_log PRIMARY KEY (reg_id));
+
+-- 索引
+CREATE INDEX idx_hosts_status ON hosts(discovery_status);
+CREATE INDEX idx_hosts_agent_status ON hosts(agent_status);
+CREATE INDEX idx_hosts_rack ON hosts(rack_info);
+CREATE INDEX idx_host_tags_category ON host_tags(category_id);
+CREATE INDEX idx_host_tag_mapping_host ON host_tag_mapping(host_id);
+CREATE INDEX idx_host_tag_mapping_tag ON host_tag_mapping(tag_id);
+CREATE INDEX idx_reg_log_time ON host_registration_log(registered_time);
+CREATE INDEX idx_reg_log_type ON host_registration_log(registration_type);
 
 CREATE TABLE serviceconfighosts (
   service_config_id BIGINT NOT NULL,
@@ -1700,5 +1766,214 @@ create index idx_qrtz_ft_j_g on QRTZ_FIRED_TRIGGERS(SCHED_NAME,JOB_NAME,JOB_GROU
 create index idx_qrtz_ft_jg on QRTZ_FIRED_TRIGGERS(SCHED_NAME,JOB_GROUP);
 create index idx_qrtz_ft_t_g on QRTZ_FIRED_TRIGGERS(SCHED_NAME,TRIGGER_NAME,TRIGGER_GROUP);
 create index idx_qrtz_ft_tg on QRTZ_FIRED_TRIGGERS(SCHED_NAME,TRIGGER_GROUP);
+
+-- ============================================
+-- 数据集市相关表 (DataMart)
+-- ============================================
+
+-- 数据目录 - 数据资产表
+CREATE TABLE data_assets (
+  asset_id BIGINT NOT NULL AUTO_INCREMENT,
+  asset_name VARCHAR(255) NOT NULL,
+  asset_type VARCHAR(50) NOT NULL COMMENT 'TABLE:表, VIEW:视图, FILE:文件, STREAM:流数据',
+  database_name VARCHAR(100),
+  schema_name VARCHAR(100),
+  table_name VARCHAR(100),
+  column_name VARCHAR(100),
+  data_format VARCHAR(50) COMMENT 'PARQUET, ORC, JSON, CSV, AVRO等',
+  storage_path VARCHAR(1000),
+  owner VARCHAR(100),
+  description TEXT,
+  tags VARCHAR(1000),
+  is_partitioned BOOLEAN DEFAULT FALSE,
+  partition_columns VARCHAR(500),
+  record_count BIGINT DEFAULT 0,
+  size_bytes BIGINT DEFAULT 0,
+  location VARCHAR(500),
+  engine VARCHAR(100) COMMENT 'HIVE, SPARK, FLINK, DATABRICKS等',
+  created_time BIGINT NOT NULL DEFAULT 0,
+  updated_time BIGINT NOT NULL DEFAULT 0,
+  last_access_time BIGINT,
+  quality_score DECIMAL(5,2) DEFAULT 0.00,
+  CONSTRAINT PK_data_assets PRIMARY KEY (asset_id),
+  CONSTRAINT UQ_asset_name_type UNIQUE (asset_name, asset_type));
+
+-- 数据目录分类/目录表
+CREATE TABLE data_catalogs (
+  catalog_id BIGINT NOT NULL AUTO_INCREMENT,
+  catalog_name VARCHAR(100) NOT NULL,
+  parent_id BIGINT,
+  catalog_type VARCHAR(50) COMMENT 'DATABASE, FOLDER, BUCKET, PROJECT',
+  description VARCHAR(500),
+  owner VARCHAR(100),
+  is_public BOOLEAN DEFAULT TRUE,
+  sort_order INT DEFAULT 0,
+  created_time BIGINT NOT NULL DEFAULT 0,
+  updated_time BIGINT NOT NULL DEFAULT 0,
+  CONSTRAINT PK_data_catalogs PRIMARY KEY (catalog_id),
+  CONSTRAINT UQ_catalog_name UNIQUE (catalog_name));
+
+-- 数据资产与目录关联表
+CREATE TABLE data_asset_catalog (
+  asset_id BIGINT NOT NULL,
+  catalog_id BIGINT NOT NULL,
+  assigned_time BIGINT NOT NULL DEFAULT 0,
+  CONSTRAINT PK_data_asset_catalog PRIMARY KEY (asset_id, catalog_id),
+  CONSTRAINT FK_dac_asset FOREIGN KEY (asset_id) REFERENCES data_assets(asset_id) ON DELETE CASCADE,
+  CONSTRAINT FK_dac_catalog FOREIGN KEY (catalog_id) REFERENCES data_catalogs(catalog_id) ON DELETE CASCADE);
+
+-- 数据血缘关系表
+CREATE TABLE data_lineage (
+  lineage_id BIGINT NOT NULL AUTO_INCREMENT,
+  source_asset_id BIGINT NOT NULL,
+  target_asset_id BIGINT NOT NULL,
+  lineage_type VARCHAR(50) NOT NULL COMMENT 'TRANSFORMATION, JOIN, AGGREGATION, FILTER, UNION',
+  transform_expression TEXT,
+  transform_type VARCHAR(100),
+  is_active BOOLEAN DEFAULT TRUE,
+  created_time BIGINT NOT NULL DEFAULT 0,
+  CONSTRAINT PK_data_lineage PRIMARY KEY (lineage_id),
+  CONSTRAINT FK_lineage_source FOREIGN KEY (source_asset_id) REFERENCES data_assets(asset_id) ON DELETE CASCADE,
+  CONSTRAINT FK_lineage_target FOREIGN KEY (target_asset_id) REFERENCES data_assets(asset_id) ON DELETE CASCADE,
+  CONSTRAINT UQ_lineage_relation UNIQUE (source_asset_id, target_asset_id, lineage_type));
+
+-- 数据质量规则表
+CREATE TABLE data_quality_rules (
+  rule_id BIGINT NOT NULL AUTO_INCREMENT,
+  rule_name VARCHAR(200) NOT NULL,
+  rule_type VARCHAR(50) NOT NULL COMMENT 'COMPLETENESS:完整性, UNIQUENESS:唯一性, CONSISTENCY:一致性, TIMELINESS:时效性, VALIDITY:有效性',
+  target_asset_id BIGINT NOT NULL,
+  target_column VARCHAR(100),
+  rule_definition TEXT NOT NULL,
+  rule_params VARCHAR(1000),
+  severity VARCHAR(20) DEFAULT 'WARNING' COMMENT 'CRITICAL, ERROR, WARNING, INFO',
+  is_enabled BOOLEAN DEFAULT TRUE,
+  schedule_cron VARCHAR(100),
+  last_run_time BIGINT,
+  last_run_status VARCHAR(20),
+  created_time BIGINT NOT NULL DEFAULT 0,
+  updated_time BIGINT NOT NULL DEFAULT 0,
+  created_by VARCHAR(100),
+  CONSTRAINT PK_data_quality_rules PRIMARY KEY (rule_id),
+  CONSTRAINT FK_rule_asset FOREIGN KEY (target_asset_id) REFERENCES data_assets(asset_id) ON DELETE CASCADE);
+
+-- 数据质量检查结果表
+CREATE TABLE data_quality_results (
+  result_id BIGINT NOT NULL AUTO_INCREMENT,
+  rule_id BIGINT NOT NULL,
+  asset_id BIGINT NOT NULL,
+  check_time BIGINT NOT NULL,
+  check_status VARCHAR(20) NOT NULL COMMENT 'PASSED, FAILED, WARNING, ERROR',
+  total_records BIGINT DEFAULT 0,
+  valid_records BIGINT DEFAULT 0,
+  invalid_records BIGINT DEFAULT 0,
+  valid_percentage DECIMAL(5,2) DEFAULT 0.00,
+  error_details TEXT,
+  duration_ms INT DEFAULT 0,
+  executed_by VARCHAR(100),
+  CONSTRAINT PK_data_quality_results PRIMARY KEY (result_id),
+  CONSTRAINT FK_result_rule FOREIGN KEY (rule_id) REFERENCES data_quality_rules(rule_id) ON DELETE CASCADE,
+  CONSTRAINT FK_result_asset FOREIGN KEY (asset_id) REFERENCES data_assets(asset_id) ON DELETE CASCADE);
+
+-- 数据质量报告表
+CREATE TABLE data_quality_reports (
+  report_id BIGINT NOT NULL AUTO_INCREMENT,
+  report_name VARCHAR(200) NOT NULL,
+  report_type VARCHAR(50) COMMENT 'DAILY, WEEKLY, MONTHLY, ON_DEMAND',
+  scope_asset_ids VARCHAR(1000) COMMENT 'JSON array of asset IDs',
+  summary TEXT,
+  total_checks INT DEFAULT 0,
+  passed_checks INT DEFAULT 0,
+  failed_checks INT DEFAULT 0,
+  warning_checks INT DEFAULT 0,
+  overall_score DECIMAL(5,2) DEFAULT 0.00,
+  start_time BIGINT NOT NULL,
+  end_time BIGINT NOT NULL,
+  generated_by VARCHAR(100),
+  created_time BIGINT NOT NULL DEFAULT 0,
+  CONSTRAINT PK_data_quality_reports PRIMARY KEY (report_id));
+
+-- 数据源注册表
+CREATE TABLE data_registry (
+  registry_id BIGINT NOT NULL AUTO_INCREMENT,
+  registry_name VARCHAR(100) NOT NULL,
+  registry_type VARCHAR(50) NOT NULL COMMENT 'HIVE, SPARK, MYSQL, POSTGRESQL, KAFKA, S3, HDFS, DATABRICKS',
+  registry_uri VARCHAR(1000) NOT NULL,
+  connection_config TEXT COMMENT 'JSON格式的连接配置',
+  auth_type VARCHAR(50) COMMENT 'NONE, KERBEROS, LDAP, IAM',
+  is_active BOOLEAN DEFAULT TRUE,
+  last_connected_time BIGINT,
+  created_time BIGINT NOT NULL DEFAULT 0,
+  updated_time BIGINT NOT NULL DEFAULT 0,
+  CONSTRAINT PK_data_registry PRIMARY KEY (registry_id),
+  CONSTRAINT UQ_registry_name UNIQUE (registry_name));
+
+-- 数据集采集任务表
+CREATE TABLE data_collection_tasks (
+  task_id BIGINT NOT NULL AUTO_INCREMENT,
+  task_name VARCHAR(200) NOT NULL,
+  task_type VARCHAR(50) COMMENT 'METADATA_SCAN, LINEAGE_SCAN, QUALITY_CHECK, PROFILING',
+  target_registry_id BIGINT,
+  target_path VARCHAR(1000),
+  schedule_cron VARCHAR(100),
+  task_config TEXT COMMENT 'JSON格式的任务配置',
+  status VARCHAR(20) DEFAULT 'PENDING' COMMENT 'PENDING, RUNNING, COMPLETED, FAILED',
+  progress_percentage INT DEFAULT 0,
+  total_items INT DEFAULT 0,
+  processed_items INT DEFAULT 0,
+  error_message TEXT,
+  start_time BIGINT,
+  end_time BIGINT,
+  created_time BIGINT NOT NULL DEFAULT 0,
+  updated_time BIGINT NOT NULL DEFAULT 0,
+  CONSTRAINT PK_data_collection_tasks PRIMARY KEY (task_id));
+
+-- 策略管理表
+CREATE TABLE `security_policy` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `name` VARCHAR(255) NOT NULL COMMENT '策略名称',
+  `content` JSON NOT NULL COMMENT '策略内容（如访问控制规则）',
+  `scope` ENUM('GLOBAL','TENANT','PROJECT') DEFAULT 'GLOBAL',
+  `is_enabled` BOOLEAN DEFAULT TRUE,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 审计日志表
+CREATE TABLE `audit_log` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` BIGINT NOT NULL COMMENT '操作人',
+  `operation` VARCHAR(50) NOT NULL COMMENT '操作类型',
+  `resource_type` VARCHAR(50) NOT NULL COMMENT '资源类型',
+  `resource_id` BIGINT COMMENT '资源ID',
+  `detail` TEXT COMMENT '操作详情',
+  `ip_address` VARCHAR(45) COMMENT '操作IP',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_operation` (`operation`),
+  INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 密钥管理表（加密存储）
+CREATE TABLE `secret_key` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `key_name` VARCHAR(255) NOT NULL COMMENT '密钥名称',
+  `encrypted_value` TEXT NOT NULL COMMENT '加密后的密钥值',
+  `algorithm` VARCHAR(50) NOT NULL COMMENT '加密算法',
+  `expire_time` DATETIME COMMENT '过期时间',
+  `created_by` BIGINT NOT NULL COMMENT '创建人',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `uk_key_name` (`key_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 索引
+CREATE INDEX idx_assets_type ON data_assets(asset_type);
+CREATE INDEX idx_assets_owner ON data_assets(owner);
+CREATE INDEX idx_assets_database ON data_assets(database_name);
+CREATE INDEX idx_assets_catalog ON data_asset_catalog(catalog_id);
+CREATE INDEX idx_lineage_source ON data_lineage(source_asset_id);
+CREATE INDEX idx_lineage_target ON data_lineage(target_asset_id);
+CREATE INDEX idx_quality_rules_asset ON data_quality_rules(target_asset_id);
+CREATE INDEX idx_quality_results_rule ON data_quality_results(rule_id);
+CREATE INDEX idx_quality_results_time ON data_quality_results(check_time);
+CREATE INDEX idx_quality_reports_time ON data_quality_reports(created_time);
 
 commit;

@@ -1,1 +1,9 @@
-com\cloudrealm\agent\AgentApplication.class
+com\cloudrealm\agent\tools\zk\ZkAcl$Permission.class
+com\cloudrealm\agent\tools\zk\ZkPathPattern$Segment.class
+com\cloudrealm\agent\tools\zk\ZkAcl$AclScheme.class
+com\cloudrealm\agent\tools\zk\ZkConnection.class
+com\cloudrealm\agent\tools\zk\ZkMigrator.class
+com\cloudrealm\agent\tools\jce\JcePolicyInfo.class
+com\cloudrealm\agent\tools\zk\ZkPathPattern.class
+com\cloudrealm\agent\tools\zk\ZkAcl.class
+com\cloudrealm\agent\tools\zk\ZkConnection$1.class

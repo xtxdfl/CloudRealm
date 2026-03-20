@@ -1,0 +1,358 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
+import os
+import signal
+import unittest
+import tempfile
+from unittest.mock import patch, MagicMock
+from contextlib import contextmanager
+from io import StringIO
+from cloud_commons import shell, OSCheck
+
+# 禁用测试中不必要的日志记�?shell.logger = MagicMock()
+
+class TestProcessManagement(unittest.TestCase):
+    """测试进程树管理功能，包括子进程识别和平行终止"""
+    
+    @classmethod
+    def setUpClass(cls):
+        """初始化模拟的 /proc 文件系统结构"""
+        # 基础进程树结�?        cls.PROC_FS_BASE = {
+            "/proc/1000/task/1000/children": "1001 1002",
+            "/proc/1000/comm": "init",
+            "/proc/1000/cmdline": "/sbin/init",
+            
+            "/proc/1001/task/1001/children": "1003 1004",
+            "/proc/1001/comm": "sshd",
+            "/proc/1001/cmdline": "/usr/sbin/sshd",
+            
+            "/proc/1002/task/1002/children": "1005",
+            "/proc/1002/comm": "apache",
+            "/proc/1002/cmdline": "/usr/sbin/apache",
+            
+            "/proc/1003/task/1003/children": "",
+            "/proc/1003/comm": "bash",
+            "/proc/1003/cmdline": "-bash",
+            
+            "/proc/1004/task/1004/children": "",
+            "/proc/1004/comm": "tail",
+            "/proc/1004/cmdline": "tail -f /var/log/syslog",
+            
+            "/proc/1005/task/1005/children": "",
+            "/proc/1005/comm": "python",
+            "/proc/1005/cmdline": "python app.py",
+        }
+        
+        # 包含 YUM 进程的特殊结�?        cls.PROC_FS_YUM = {
+            "/proc/2000/task/2000/children": "2001",
+            "/proc/2000/comm": "bash",
+            "/proc/2000/cmdline": "bash -c yum update",
+            
+            "/proc/2001/task/2001/children": "",
+            "/proc/2001/comm": "yum",
+            "/proc/2001/cmdline": "yum update httpd",
+        }
+    
+    @contextmanager
+    def procfs_open_mock(self, path):
+        """模拟 /proc 文件系统访问处理函数"""
+        proc_data = self.current_proc_fs.get(path)
+        if proc_data:
+            yield StringIO(proc_data)
+        else:
+            # 处理不存在的 PID
+            raise FileNotFoundError(f"No such process: {path}")
+    
+    def setUp(self):
+        """设置默认的进程树结构"""
+        self.current_proc_fs = self.PROC_FS_BASE.copy()
+        self.open_patch = patch("builtins.open", new=self.procfs_open_mock)
+        self.open_patch.start()
+        
+    def tearDown(self):
+        """清理模拟环境"""
+        self.open_patch.stop()
+    
+    def test_process_tree_traversal(self):
+        """测试递归遍历进程树的能力"""
+        # 获取整个进程�?        children = list(shell.get_all_children(1000))
+        pids = [pid for pid, _ in children]
+        
+        # 验证完整树结�?        expected_pids = [1000, 1001, 1003, 1004, 1002, 1005]
+        self.assertEqual(pids, expected_pids, "进程树遍历顺序错�?)
+        
+        # 验证进程详细信息
+        for pid, comm in children:
+            if pid == 1000:
+                self.assertEqual(comm, "init", "根进程名称错�?)
+            elif pid == 1005:
+                self.assertEqual(comm, "python", "叶子进程名称错误")
+    
+    def test_process_tree_branch(self):
+        """测试分支进程树的遍历"""
+        # 获取 apache 分支
+        children = list(shell.get_all_children(1002))
+        pids = [pid for pid, _ in children]
+        
+        self.assertEqual(pids, [1002, 1005], "分支进程树错�?)
+        self.assertEqual(
+            children[1][1], "python", 
+            "子进程命令名称不匹配"
+        )
+    
+    def test_nonexistent_process(self):
+        """测试不存在的进程处理"""
+        with self.assertRaises(FileNotFoundError):
+            list(shell.get_all_children(9999))
+
+
+class TestProcessTermination(unittest.TestCase):
+    """测试进程树终止功能，包括信号发送策�?""
+    
+    def setUp(self):
+        """配置模拟环境"""
+        # 原始方法备份
+        self.original_waiter = shell.wait_for_process_list_kill
+        
+        # 移除等待延迟，加速测�?        shell.wait_for_process_list_kill = lambda pids, timeout=0, **_: timeout
+        
+        # 创建模拟依赖
+        self.os_list_patch = patch("os.listdir")
+        self.os_kill_patch = patch("os.kill")
+        self.os_family_patch = patch.object(
+            OSCheck, "get_os_family", return_value="redhat"
+        )
+        
+        # 启动模拟
+        self.os_list_mock = self.os_list_patch.start()
+        self.os_kill_mock = self.os_kill_patch.start()
+        self.os_family_mock = self.os_family_patch.start()
+        
+        # 配置默认响应
+        self.os_list_mock.return_value = []
+    
+    def tearDown(self):
+        """清理模拟环境"""
+        self.os_list_patch.stop()
+        self.os_kill_patch.stop()
+        self.os_family_patch.stop()
+        
+        # 恢复原始方法
+        shell.wait_for_process_list_kill = self.original_waiter
+    
+    def test_graceful_termination(self):
+        """测试正常进程树终�?SIGTERM)"""
+        # 模拟进程树和 /proc 响应
+        self.os_list_mock.side_effect = [
+            [str(pid) for pid in [1000, 1001, 1002]],  # 第一次查询存活进�?            [str(pid) for pid in [1002]],              # 第二次查询存活进�?            []                                          # 最终全部终�?        ]
+        
+        shell.kill_process_with_children(1000)
+        
+        # 验证信号发送顺�?        expected_calls = [
+            call(1000, signal.SIGTERM),
+            call(1001, signal.SIGTERM),
+            call(1002, signal.SIGTERM)  # 只期�?SIGTERM，没�?SIGKILL
+        ]
+        self.os_kill_mock.assert_has_calls(expected_calls, any_order=True)
+
+    def test_forced_termination(self):
+        """测试强制进程树终�?SIGKILL)"""
+        # 模拟部分进程抵抗 SIGTERM
+        self.os_list_mock.side_effect = [
+            ["1000", "1001"],  # 初始进程
+            ["1000", "1001"],  # 第一次检查（TERM后）进程仍在
+            ["1000", "1001"],  # 第二次检�?            ["1000"],          # KILL后部分进程消�?            []                 # 最终全部终�?        ]
+        
+        shell.kill_process_with_children(1000)
+        
+        # 验证双重信号策略
+        term_calls = [
+            call(1000, signal.SIGTERM),
+            call(1001, signal.SIGTERM)
+        ]
+        kill_calls = [
+            call(1000, signal.SIGKILL),
+            call(1001, signal.SIGKILL)
+        ]
+        
+        # 至少发�?SIGTERM
+        self.os_kill_mock.assert_has_calls(term_calls, any_order=True)
+        
+        # 发�?SIGKILL（可能在另一轮循环）
+        self.os_kill_mock.assert_has_calls(kill_calls, any_order=True)
+    
+    def test_yum_process_protection(self):
+        """测试 YUM 进程保护机制"""
+        # 模拟包含 YUM 的进程树
+        with patch.object(OSCheck, "get_os_family", return_value="redhat"):
+            with patch("builtins.open", new=self._yum_proc_open_mock):
+                self.os_list_mock.side_effect = [["2000"]]
+                
+                shell.kill_process_with_children(2000)
+                
+                # 验证系统级进程保�?                self.os_kill_mock.assert_not_called()
+    
+    @contextmanager
+    def _yum_proc_open_mock(self, path, *args):
+        """YUM 进程专用模拟"""
+        yum_proc_fs = {
+            "/proc/2000/task/2000/children": "2001",
+            "/proc/2000/comm": "bash",
+            "/proc/2000/cmdline": "bash -c yum update",
+            
+            "/proc/2001/task/2001/children": "",
+            "/proc/2001/comm": "yum",
+            "/proc/2001/cmdline": "yum update httpd",
+        }
+        if path in yum_proc_fs:
+            yield StringIO(yum_proc_fs[path])
+        else:
+            yield StringIO("")
+
+
+class TestCommandExecutionLinux(unittest.TestCase):
+    """测试�?Linux 系统上的命令执行功能"""
+    
+    def setUp(self):
+        """准备测试环境"""
+        self.temp_dir = tempfile.mkdmdtemp(prefix="shell_test_")
+        self.runner = shell.shellRunnerLinux()
+    
+    def tearDown(self):
+        """清理测试环境"""
+        if os.path.exists(self.temp_dir):
+            os.rmdir(self.temp_dir)
+    
+    @patch("subprocess.Popen")
+    @patch("os.environ.copy")
+    def test_command_execution_success(self, env_copy_mock, popen_mock):
+        """测试成功执行简单命�?""
+        # 模拟成功执行
+        mock_process = MagicMock()
+        mock_process.communicate.return_value = (b"output", b"")
+        mock_process.returncode = 0
+        popen_mock.return_value = mock_process
+        
+        # 执行测试命令
+        result = self.runner.run(["ls", "-l", self.temp_dir])
+        
+        # 验证结果
+        self.assertEqual(result["exitcode"], 0, "退出代码应�?")
+        self.assertEqual(result["stdout"], "output", "标准输出不匹�?)
+        self.assertEqual(result["stderr"], "", "标准错误应为�?)
+        
+        # 验证调用参数
+        popen_mock.assert_called_once_with(
+            ["ls", "-l", self.temp_dir],
+            stdout=unittest.mock.ANY,
+            stderr=unittest.mock.ANY,
+            env=env_copy_mock.return_value,
+            cwd=unittest.mock.ANY,
+            preexec_fn=unittest.mock.ANY
+        )
+    
+    @patch("subprocess.Popen")
+    def test_command_execution_failure(self, popen_mock):
+        """测试命令执行失败场景"""
+        # 模拟失败执行
+        mock_process = MagicMock()
+        mock_process.communicate.return_value = (b"", b"error")
+        mock_process.returncode = 1
+        popen_mock.return_value = mock_process
+        
+        # 执行问题命令
+        result = self.runner.run(["rm", "/nonexistent/file"])
+        
+        # 验证失败状�?        self.assertEqual(result["exitcode"], 1, "退出代码应�?")
+        self.assertEqual(result["stderr"], "error", "错误输出不匹�?)
+    
+    @patch("subprocess.Popen")
+    def test_environment_variables(self, popen_mock):
+        """测试环境变量传�?""
+        # 自定义环境变�?        custom_env = {"TEST_VAR": "value", "PATH": "/custom/path"}
+        
+        # 执行带环境变量的命令
+        self.runner.run(["echo"], env=custom_env)
+        
+        # 验证环境变量
+        _, kwargs = popen_mock.call_args
+        self.assertEqual(kwargs["env"]["TEST_VAR"], "value", "环境变量未传�?)
+        self.assertEqual(kwargs["env"]["PATH"], "/custom/path", "PATH变量未覆�?)
+    
+    @patch("subprocess.Popen")
+    def test_working_directory(self, popen_mock):
+        """测试工作目录设置"""
+        # 自定义工作目�?        self.runner.run(["pwd"], cwd=self.temp_dir)
+        
+        # 验证工作目录
+        _, kwargs = popen_mock.call_args
+        self.assertEqual(kwargs["cwd"], self.temp_dir, "工作目录设置错误")
+    
+    @patch("subprocess.Popen")
+    def test_timeout_handling(self, popen_mock):
+        """测试命令超时处理"""
+        # 模拟超时进程
+        mock_process = MagicMock()
+        mock_process.communicate.return_value = (b"", b"")
+        mock_process.returncode = None  # 超时不会设置returncode
+        
+        # 设置超时时间
+        result = self.runner.run(["sleep", "10"], timeout=0.1)
+        
+        # 验证超时结果
+        self.assertEqual(result["exitcode"], -9, "退出代码应为超时标�?)
+        self.assertIn("timeout", result["stderr"], "错误信息缺少超时提示")
+
+class TestMacOSCommandExecution(TestCommandExecutionLinux):
+    """测试�?macOS 系统上的命令执行功能"""
+    
+    @classmethod
+    def setUpClass(cls):
+        """设置 macOS 环境"""
+        cls.os_patch = patch.object(
+            OSCheck, "get_os_family", return_value="mac"
+        )
+        cls.os_patch.start()
+        super().setUpClass()
+    
+    @classmethod
+    def tearDownClass(cls):
+        """清理 macOS 模拟"""
+        cls.os_patch.stop()
+        super().tearDownClass()
+    
+    @patch("subprocess.Popen")
+    def test_mac_specific_command(self, popen_mock):
+        """测试 macOS 系统特定命令执行"""
+        # 执行 macOS 特有命令
+        self.runner.run(["say", "hello"])
+        
+        # 验证命令调用
+        popen_mock.assert_called_once_with(
+            ["say", "hello"],
+            stdout=unittest.mock.ANY,
+            stderr=unittest.mock.ANY,
+            env=unittest.mock.ANY,
+            cwd=unittest.mock.ANY,
+            preexec_fn=unittest.mock.ANY
+        )
+
+if __name__ == "__main__":
+    unittest.main()

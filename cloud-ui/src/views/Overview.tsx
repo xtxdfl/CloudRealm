@@ -21,7 +21,7 @@ const alertsData = [
   { id: 2, level: 'warning', msg: 'YARN 队列 (root.default) 资源使用率 > 90%', time: '15分钟前', source: 'YARN' },
   { id: 3, level: 'critical', msg: 'Hive Metastore 连接超时', time: '32分钟前', source: 'HIVE' },
   { id: 4, level: 'warning', msg: 'Kafka Topic (logs) 消费积压', time: '1小时前', source: 'KAFKA' },
-  { id: 5, level: 'info', msg: '集群配置变更：hdfs-site.xml', time: '2小时前', source: 'Ambari' },
+  { id: 5, level: 'info', msg: '集群配置变更：hdfs-site.xml', time: '2小时前', source: 'Cloud' },
   { id: 6, level: 'info', msg: 'Spark Job (Daily-ETL) 完成', time: '3小时前', source: 'SPARK' },
 ];
 
