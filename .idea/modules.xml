@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/cloud-agent/cloud-agent.iml" filepath="$PROJECT_DIR$/cloud-agent/cloud-agent.iml" />
+      <module fileurl="file://$PROJECT_DIR$/cloud-common/cloud-common.iml" filepath="$PROJECT_DIR$/cloud-common/cloud-common.iml" />
+      <module fileurl="file://$PROJECT_DIR$/cloud-jmx/cloud-jmx.iml" filepath="$PROJECT_DIR$/cloud-jmx/cloud-jmx.iml" />
+      <module fileurl="file://$PROJECT_DIR$/cloud-server/cloud-server.iml" filepath="$PROJECT_DIR$/cloud-server/cloud-server.iml" />
+      <module fileurl="file://$PROJECT_DIR$/cloud-gateway/cloudrealm-gateway.iml" filepath="$PROJECT_DIR$/cloud-gateway/cloudrealm-gateway.iml" />
+    </modules>
+  </component>
+</project>

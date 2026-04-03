@@ -8,6 +8,7 @@ import {
 import { cn } from '@/lib/utils';
 import Overview from '../views/Overview';
 import HostMgt from '../views/HostMgt';
+import AgentAndExporterMgt from '../views/AgentAndExporterMgt';
 import TagMgt from '../views/TagMgt';
 import ServiceMgt from '../views/ServiceMgt';
 import DataMart from '../views/DataMart';
@@ -50,6 +51,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchServices();
+    const interval = setInterval(fetchServices, 5000);
     
     // Click outside handler
     const handleClickOutside = (event: MouseEvent) => {
@@ -65,7 +67,10 @@ export default function Dashboard() {
     };
     
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      clearInterval(interval);
+    };
   }, []);
 
   const handleSearch = (query: string) => {
@@ -140,32 +145,21 @@ export default function Dashboard() {
       const response = await fetch('/api/services');
       if (response.ok) {
         const data = await response.json();
-        // Map backend status to frontend simple status for sidebar
-        const mappedServices = data.map((s: any) => ({
-            name: s.name,
-            status: s.status.toLowerCase()
-        }));
-        setServices(mappedServices);
+        if (data && data.length > 0) {
+          const mappedServices = data.map((s: any) => ({
+            name: s.name || s.serviceName || '',
+            status: (s.status || 'unknown').toLowerCase()
+          }));
+          setServices(mappedServices);
+        } else {
+          setServices([]);
+        }
       } else {
-        // Fallback if API fails
-         setServices([
-            { name: 'HDFS', status: 'healthy' },
-            { name: 'YARN', status: 'healthy' },
-            { name: 'HIVE', status: 'warning' },
-            { name: 'SPARK', status: 'healthy' },
-            { name: 'KAFKA', status: 'healthy' },
-         ]);
+        setServices([]);
       }
     } catch (error) {
       console.error('Error fetching services for sidebar:', error);
-       // Fallback
-       setServices([
-        { name: 'HDFS', status: 'healthy' },
-        { name: 'YARN', status: 'healthy' },
-        { name: 'HIVE', status: 'warning' },
-        { name: 'SPARK', status: 'healthy' },
-        { name: 'KAFKA', status: 'healthy' },
-     ]);
+      setServices([]);
     }
   };
 
@@ -174,7 +168,11 @@ export default function Dashboard() {
     switch (activeView) {
       case 'Overview': return <Overview onNavigate={setActiveView} />;
       case 'ServiceMgt': return <ServiceMgt activeSubView={activeSubView} />;
-      case 'HostMgt': return <HostMgt activeSubView={activeSubView} />;
+      case 'HostMgt': 
+        if (activeSubView === 'agent-exporter') {
+          return <AgentAndExporterMgt />;
+        }
+        return <HostMgt activeSubView={activeSubView} setActiveSubView={setActiveSubView} />;
       case 'TagMgt': return <TagMgt activeSubView={activeSubView} />;
       case 'DataMart': return <DataMart activeSubView={activeSubView} />;
       case 'SecurityMgt': return <SecurityMgt activeSubView={activeSubView} />;
@@ -287,7 +285,7 @@ export default function Dashboard() {
                {[
                  { 
                    id: 'ServiceMgt', label: '服务管理', icon: Layers,
-                   subItems: ['服务列表', '部署向导', '配置中心']
+                   subItems: ['服务列表', '部署向导', '配置中心', '服务依赖拓扑']
                  },
                  {
                    id: 'HostMgt', label: '主机管理', icon: Server,
@@ -315,7 +313,7 @@ export default function Dashboard() {
                  },
                  { 
                    id: 'UserMgt', label: '用户管理', icon: Users,
-                   subItems: ['角色分配', '租户配置', '操作记录']
+                   subItems: ['用户列表', '角色管理', '租户配置', '操作记录']
                  },
                ].map(item => (
                 <div key={item.id} className="relative group">

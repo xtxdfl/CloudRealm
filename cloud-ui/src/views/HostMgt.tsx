@@ -5,7 +5,7 @@ import {
   Thermometer, Search, Filter, Trash2, X
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { cn } from '@/lib/utils';
+import { cn, formatBytes, formatTimestamp } from '@/lib/utils';
 
 // API Base URL
 const API_BASE = '/api';
@@ -14,48 +14,45 @@ const API_BASE = '/api';
 interface HostInfo {
   hostId?: number;
   hostname?: string;
-  name?: string;  // alias for hostname in some data
+  name?: string;
   ip: string;
   role?: string;
   status?: string;
   agentStatus?: string;
   cores?: number;
   memory?: string;
-  mem?: string;  // alias for memory
+  mem?: string;
   totalMemory?: number;
   cpuUsage?: number;
-  memUsage?: number;  // alias for memoryUsage
+  memUsage?: number;
   memoryUsage?: number;
   diskUsage?: number;
-  disk?: string;  // alias for disk
+  disk?: string;
   totalDisk?: number;
   usedDisk?: number;
   osType?: string;
   osArch?: string;
   rackInfo?: string;
-  rack?: string;  // alias for rackInfo
+  rack?: string;
   agentVersion?: string;
   tags?: string[];
   components?: string[];
   uptime?: string;
+  sshPort?: number;
+  sshUser?: string;
+  sshPassword?: string;
+  sshPrivateKey?: string;
+  sshPublicKey?: string;
+  sshAuthType?: string;
+  lastOperationTime?: number;
+  storageSize?: number;
+  storageUsage?: number;
 }
 
-// Mock Data
-const mockHosts: HostInfo[] = [
-  { name: 'Master01', ip: '192.168.1.10', status: 'Running', cores: 8, mem: '32GB', disk: '500GB', role: 'Control Plane', rack: 'rack-01', cpuUsage: 45, memUsage: 60 },
-  { name: 'Worker01', ip: '192.168.1.11', status: 'Running', cores: 16, mem: '64GB', disk: '2TB', role: 'Worker', rack: 'rack-01', cpuUsage: 78, memUsage: 85 },
-  { name: 'Worker02', ip: '192.168.1.12', status: 'Running', cores: 16, mem: '64GB', disk: '2TB', role: 'Worker', rack: 'rack-02', cpuUsage: 62, memUsage: 70 },
-  { name: 'Worker03', ip: '192.168.1.13', status: 'Maintenance', cores: 16, mem: '64GB', disk: '2TB', role: 'Worker', rack: 'rack-02', cpuUsage: 0, memUsage: 0 },
-  { name: 'Worker04', ip: '192.168.1.14', status: 'Running', cores: 32, mem: '128GB', disk: '4TB', role: 'Worker', rack: 'rack-03', cpuUsage: 55, memUsage: 45 },
-];
+// Mock Data - 预留，仅用于开发调试
+const mockHosts: HostInfo[] = [];
 
-const hardwareHealth = [
-  { host: 'Master01', diskHealth: 'Healthy', temp: 42, smartStatus: 'Pass', networkErrors: 0 },
-  { host: 'Worker01', diskHealth: 'Warning', temp: 55, smartStatus: 'Review', networkErrors: 12 },
-  { host: 'Worker02', diskHealth: 'Healthy', temp: 45, smartStatus: 'Pass', networkErrors: 0 },
-  { host: 'Worker03', diskHealth: 'Unknown', temp: 0, smartStatus: 'Unknown', networkErrors: 0 },
-  { host: 'Worker04', diskHealth: 'Healthy', temp: 40, smartStatus: 'Pass', networkErrors: 2 },
-];
+const hardwareHealth: { host: string; diskHealth: string; temp: number; smartStatus: string; networkErrors: number }[] = [];
 
 const resourceTrend = Array.from({ length: 20 }).map((_, i) => ({
   time: i,
@@ -63,12 +60,14 @@ const resourceTrend = Array.from({ length: 20 }).map((_, i) => ({
   mem: Math.floor(Math.random() * 20) + 50,
 }));
 
-export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
+export default function HostMgt({ activeSubView, setActiveSubView }: { activeSubView?: string, setActiveSubView?: (view: string) => void }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [hosts, setHosts] = useState<HostInfo[]>(mockHosts);
   const [selectedHosts, setSelectedHosts] = useState<string[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showHostDetail, setShowHostDetail] = useState(false);
+  const [selectedHostDetail, setSelectedHostDetail] = useState<HostInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
@@ -82,14 +81,13 @@ export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
       const response = await fetch(`${API_BASE}/hosts`);
       if (response.ok) {
         const data = await response.json();
-        if (data && data.length > 0) {
-          setHosts(data);
-        }
+        setHosts(data || []);
+      } else {
+        setHosts([]);
       }
     } catch (error) {
       console.error('Failed to load hosts:', error);
-      // 使用mock数据
-      setHosts(mockHosts);
+      setHosts([]);
     } finally {
       setLoading(false);
     }
@@ -112,12 +110,25 @@ export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
       return;
     }
 
+    const requestBody: any = { ...newHost };
+    if (newHost.sshAuthType === 'private_key') {
+      requestBody.sshPrivateKey = newHost.sshPrivateKey;
+      requestBody.sshPassword = '';
+    } else if (newHost.sshAuthType === 'public_key') {
+      requestBody.sshPublicKey = newHost.sshPublicKey;
+      requestBody.sshPassword = newHost.sshPassword;
+    } else {
+      requestBody.sshPassword = newHost.sshPassword;
+      requestBody.sshPrivateKey = '';
+      requestBody.sshPublicKey = '';
+    }
+
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE}/hosts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newHost)
+        body: JSON.stringify(requestBody)
       });
 
       const data = await response.json();
@@ -269,6 +280,112 @@ export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
     }
   };
 
+  // 主机操作（启动/停止/重启/维护/下线/删除）
+  const handleHostAction = async (hostname: string, action: string) => {
+    if (!hostname) {
+      showNotification('error', '主机名不能为空');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      let url = '';
+      let method = 'POST';
+      
+      switch (action) {
+        case 'start':
+          url = `${API_BASE}/hosts/${hostname}/start`;
+          break;
+        case 'stop':
+          url = `${API_BASE}/hosts/${hostname}/stop`;
+          break;
+        case 'restart':
+          url = `${API_BASE}/hosts/${hostname}/restart`;
+          break;
+        case 'maintenance':
+          url = `${API_BASE}/hosts/${hostname}/maintenance`;
+          break;
+        case 'exit-maintenance':
+          url = `${API_BASE}/hosts/${hostname}/exit-maintenance`;
+          break;
+        case 'offline':
+          url = `${API_BASE}/hosts/${hostname}/offline`;
+          break;
+        case 'delete':
+          url = `${API_BASE}/hosts/${hostname}`;
+          method = 'DELETE';
+          break;
+        default:
+          showNotification('error', '未知操作');
+          setLoading(false);
+          return;
+      }
+
+      const response = await fetch(url, { method });
+      const data = await response.json();
+      
+      if (data.success) {
+        const actionMessages: { [key: string]: string } = {
+          start: '启动',
+          stop: '停止',
+          restart: '重启',
+          maintenance: '进入维护模式',
+          'exit-maintenance': '退出维护模式',
+          offline: '下线',
+          delete: '删除'
+        };
+        showNotification('success', `主机${actionMessages[action] || action}成功`);
+        loadHosts();
+        
+        // 如果是删除操作，关闭详情弹窗
+        if (action === 'delete') {
+          setShowHostDetail(false);
+        }
+      } else {
+        showNotification('error', data.message || data.error || `${action}失败`);
+      }
+    } catch (error) {
+      console.error(`Failed to ${action} host:`, error);
+      // Mock模式
+      const actionMessages: { [key: string]: string } = {
+        start: '已启动',
+        stop: '已停止',
+        restart: '已重启',
+        maintenance: '已进入维护模式',
+        'exit-maintenance': '已退出维护模式',
+        offline: '已下线',
+        delete: '已删除'
+      };
+      
+      if (action === 'delete') {
+        setHosts(hosts.filter(h => (h.hostname || h.name) !== hostname));
+        setShowHostDetail(false);
+      } else {
+        setHosts(hosts.map(h => (h.hostname || h.name) === hostname ? { ...h, status: getMockStatus(action) } : h));
+      }
+      showNotification('success', `主机${actionMessages[action] || action} (Mock)`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 获取Mock状态
+  const getMockStatus = (action: string): string => {
+    switch (action) {
+      case 'start':
+      case 'restart':
+      case 'exit-maintenance':
+        return 'Running';
+      case 'stop':
+      case 'offline':
+        return 'Stopped';
+      case 'maintenance':
+        return 'Maintenance';
+      default:
+        return 'Running';
+    }
+  };
+
   // 切换主机选中状态
   const toggleHostSelection = (hostname: string) => {
     // Also handle 'name' field which is used in mock data
@@ -380,15 +497,17 @@ export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
                      <th className="px-6 py-3">Role</th>
                      <th className="px-6 py-3">CPU Usage</th>
                      <th className="px-6 py-3">Mem Usage</th>
+                     <th className="px-6 py-3">Storage</th>
+                     <th className="px-6 py-3">Last Operation</th>
                      <th className="px-6 py-3">Status</th>
                      <th className="px-6 py-3">Action</th>
                   </tr>
                </thead>
                <tbody className="divide-y divide-white/5 text-slate-300">
                   {hosts.map(host => (
-                     <tr key={host.name} className="hover:bg-white/5 transition-colors">
+                     <tr key={host.hostname || host.name} className="hover:bg-white/5 transition-colors">
                         <td className="px-6 py-4">
-                           <div className="font-bold text-white">{host.name}</div>
+                           <div className="font-bold text-white">{host.hostname || host.name}</div>
                            <div className="text-xs text-slate-500">{host.ip}</div>
                         </td>
                         <td className="px-6 py-4 text-xs">{host.role}</td>
@@ -415,15 +534,39 @@ export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
                            </div>
                         </td>
                         <td className="px-6 py-4">
+                           <div className="flex items-center">
+                              <span className="text-xs w-8">{formatBytes(host.storageSize)}</span>
+                              <div className="h-1.5 w-24 bg-[#020617] rounded-full overflow-hidden ml-2">
+                                 <div
+                                    className={cn("h-full", (host.storageUsage || 0) > 80 ? "bg-rose-500" : "bg-[#a855f7]")}
+                                    style={{width: `${host.storageSize ? (host.storageUsage ? Math.min(100, Math.round((host.storageUsage / host.storageSize) * 100)) : 0) : 0}%`}}
+                                 ></div>
+                              </div>
+                           </div>
+                        </td>
+                        <td className="px-6 py-4 text-xs text-slate-400">
+                           {host.lastOperationTime ? formatTimestamp(host.lastOperationTime) : '-'}
+                        </td>
+                        <td className="px-6 py-4">
                            <span className={cn(
                               "px-2 py-0.5 rounded-full text-[10px] font-bold border",
-                              host.status === 'Running' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                              host.status === 'Running' || host.status === 'HEALTHY' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : 
+                              host.status === 'STOPPED' || host.status === 'UNHEALTHY' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
+                              "bg-slate-500/10 text-slate-400 border-slate-500/20"
                            )}>
                               {host.status}
                            </span>
                         </td>
                         <td className="px-6 py-4">
-                           <button className="text-[#38bdf8] hover:text-white text-xs">Detail</button>
+                           <button 
+                              className="text-[#38bdf8] hover:text-white text-xs"
+                              onClick={() => {
+                                setSelectedHostDetail(host);
+                                setShowHostDetail(true);
+                              }}
+                           >
+                              Detail
+                           </button>
                         </td>
                      </tr>
                   ))}
@@ -457,22 +600,22 @@ export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
                         <Server className="w-4 h-4 text-slate-500" />
                      </div>
                      <div className="space-y-3">
-                        {hosts.filter(h => h.rack === rack).map(host => (
-                           <div key={host.name} className="bg-[#0f172a] p-3 rounded-lg border border-slate-700 flex items-center justify-between group hover:border-[#38bdf8] transition-colors cursor-pointer">
+                        {hosts.filter(h => h.rackInfo === rack || h.rack === rack).map(host => (
+                           <div key={host.hostname || host.name} className="bg-[#0f172a] p-3 rounded-lg border border-slate-700 flex items-center justify-between group hover:border-[#38bdf8] transition-colors cursor-pointer">
                               <div className="flex items-center">
                                  <div className={cn(
                                     "w-2 h-2 rounded-full mr-2",
-                                    host.status === 'Running' ? "bg-[#00ff9d] shadow-[0_0_5px_#00ff9d]" : "bg-slate-500"
+                                    host.status === 'Running' || host.status === 'HEALTHY' ? "bg-[#00ff9d] shadow-[0_0_5px_#00ff9d]" : "bg-slate-500"
                                  )}></div>
                                  <div>
-                                    <div className="text-xs font-bold text-white group-hover:text-[#38bdf8]">{host.name}</div>
+                                    <div className="text-xs font-bold text-white group-hover:text-[#38bdf8]">{host.hostname || host.name}</div>
                                     <div className="text-[10px] text-slate-500">{host.ip}</div>
                                  </div>
                               </div>
-                              <div className="text-[10px] text-slate-400">{host.role === 'Control Plane' ? 'Master' : 'Worker'}</div>
+                              <div className="text-[10px] text-slate-400">{host.role === 'Control Plane' || host.role === 'Master' ? 'Master' : 'Worker'}</div>
                            </div>
                         ))}
-                        {hosts.filter(h => h.rack === rack).length === 0 && (
+                        {hosts.filter(h => h.rackInfo === rack || h.rack === rack).length === 0 && (
                            <div className="text-center py-4 text-xs text-slate-600 italic">Empty Rack</div>
                         )}
                      </div>
@@ -541,20 +684,6 @@ export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
 
   const renderOverview = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Notification */}
-      {notification && (
-        <div className={cn(
-          "fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center",
-          notification.type === 'success' ? 'bg-emerald-500/90 text-white' :
-          notification.type === 'error' ? 'bg-rose-500/90 text-white' :
-          'bg-blue-500/90 text-white'
-        )}>
-          {notification.type === 'success' && <CheckCircle className="w-5 h-5 mr-2" />}
-          {notification.type === 'error' && <AlertTriangle className="w-5 h-5 mr-2" />}
-          {notification.message}
-        </div>
-      )}
-
       {/* 功能工具栏 */}
       <div className="flex flex-wrap gap-3">
         <button
@@ -601,13 +730,28 @@ export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
             <h3 className="font-bold text-white flex items-center">
               <Server className="w-5 h-5 mr-2 text-[#38bdf8]" /> 主机列表
             </h3>
+            <span className="text-xs text-slate-500">{hosts.length} 台主机</span>
           </div>
+          {loading && (
+            <div className="p-8 text-center text-slate-400">
+              <div className="animate-spin w-8 h-8 border-2 border-[#38bdf8] border-t-transparent rounded-full mx-auto mb-2"></div>
+              加载中...
+            </div>
+          )}
+          {!loading && hosts.length === 0 && (
+            <div className="p-8 text-center text-slate-500">
+              暂无主机数据
+            </div>
+          )}
+          {!loading && hosts.length > 0 && (
           <table className="w-full text-left text-sm">
             <thead className="bg-white/5 text-slate-400 uppercase text-[10px] tracking-wider">
               <tr>
                 <th className="px-6 py-3">主机名 / IP</th>
                 <th className="px-6 py-3">角色</th>
                 <th className="px-6 py-3">资源 (C/M)</th>
+                <th className="px-6 py-3">存储</th>
+                <th className="px-6 py-3">上次操作</th>
                 <th className="px-6 py-3">状态</th>
                 <th className="px-6 py-3">操作</th>
               </tr>
@@ -626,11 +770,13 @@ export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
                     <div className="text-xs text-slate-500 ml-7">{host.ip}</div>
                   </td>
                   <td className="px-6 py-4 text-xs">{host.role}</td>
-                  <td className="px-6 py-4 text-xs font-mono">{host.cores}C / {host.mem}</td>
+                  <td className="px-6 py-4 text-xs font-mono">{host.cores}C / {host.memory || host.mem || '-'}</td>
+                  <td className="px-6 py-4 text-xs font-mono">{formatBytes(host.storageSize)} / {formatBytes(host.storageUsage)}</td>
+                  <td className="px-6 py-4 text-xs text-slate-400">{host.lastOperationTime ? formatTimestamp(host.lastOperationTime) : '-'}</td>
                   <td className="px-6 py-4">
                     <span className={cn(
                       "px-2 py-0.5 rounded-full text-[10px] font-bold border",
-                      host.status === 'Running' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                      host.status === 'Running' || host.status === 'HEALTHY' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                     )}>
                       {host.status}
                     </span>
@@ -651,6 +797,7 @@ export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
               ))}
             </tbody>
           </table>
+          )}
         </div>
 
         {/* 2. Agent & Worker 管理 */}
@@ -664,10 +811,20 @@ export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
                 <span className="text-sm">运行状态</span>
                 <span className="text-xs text-[#00ff9d] font-bold">142 Active</span>
               </div>
-              <button className="w-full py-2 bg-white/5 border border-white/10 rounded-lg text-xs hover:bg-white/10 transition-all">
+              <button 
+                onClick={() => {
+                  setActiveSubView?.('agent-exporter');
+                }}
+                className="w-full py-2 bg-white/5 border border-white/10 rounded-lg text-xs hover:bg-white/10 transition-all"
+              >
                 版本热升级 (JMX/Exporter)
               </button>
-              <button className="w-full py-2 bg-white/5 border border-white/10 rounded-lg text-xs hover:bg-white/10 transition-all">
+              <button 
+                onClick={() => {
+                  setActiveSubView?.('agent-exporter');
+                }}
+                className="w-full py-2 bg-white/5 border border-white/10 rounded-lg text-xs hover:bg-white/10 transition-all"
+              >
                 配置模板库
               </button>
             </div>
@@ -696,14 +853,14 @@ export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
       {/* 添加主机模态框 */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="glass-panel p-6 rounded-2xl w-[400px]">
-            <div className="flex justify-between items-center mb-4">
+          <div className="glass-panel p-6 rounded-2xl w-[400px] min-h-[320px] flex flex-col">
+            <div className="flex justify-between items-center mb-4 flex-shrink-0">
               <h3 className="text-lg font-bold text-white">添加主机</h3>
               <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-4 flex-1">
               <div>
                 <label className="block text-sm text-slate-400 mb-1">主机名 *</label>
                 <input
@@ -723,6 +880,71 @@ export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
                   className="w-full bg-[#020617] border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
                   placeholder="例如: 192.168.1.100"
                 />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">SSH端口</label>
+                <input
+                  type="number"
+                  value={newHost.sshPort || 22}
+                  onChange={(e) => setNewHost({ ...newHost, sshPort: parseInt(e.target.value) || 22 })}
+                  className="w-full bg-[#020617] border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                  placeholder="22"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">SSH用户名</label>
+                <input
+                  type="text"
+                  value={newHost.sshUser || ''}
+                  onChange={(e) => setNewHost({ ...newHost, sshUser: e.target.value })}
+                  className="w-full bg-[#020617] border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                  placeholder="root"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-1">SSH密码/私钥</label>
+                <select
+                  value={newHost.sshAuthType || 'password'}
+                  onChange={(e) => setNewHost({ ...newHost, sshAuthType: e.target.value })}
+                  className="w-full bg-[#020617] border border-white/10 rounded-lg px-3 py-2 text-white text-sm mb-2"
+                >
+                  <option value="password">SSH密码</option>
+                  <option value="private_key">SSH私钥</option>
+                  <option value="public_key">SSH公钥+密码</option>
+                </select>
+                {(newHost.sshAuthType === 'password' || !newHost.sshAuthType) && (
+                  <input
+                    type="password"
+                    value={newHost.sshPassword || ''}
+                    onChange={(e) => setNewHost({ ...newHost, sshPassword: e.target.value })}
+                    className="w-full bg-[#020617] border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                    placeholder="请输入SSH密码"
+                  />
+                )}
+                {(newHost.sshAuthType === 'private_key' || newHost.sshAuthType === 'public_key') && (
+                  <textarea
+                    value={newHost.sshPrivateKey || newHost.sshPublicKey || ''}
+                    onChange={(e) => {
+                      if (newHost.sshAuthType === 'private_key') {
+                        setNewHost({ ...newHost, sshPrivateKey: e.target.value, sshPassword: '' })
+                      } else {
+                        setNewHost({ ...newHost, sshPublicKey: e.target.value, sshPassword: newHost.sshPassword || '' })
+                      }
+                    }}
+                    className="w-full bg-[#020617] border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                    placeholder={newHost.sshAuthType === 'private_key' ? "请粘贴SSH私钥内容" : "请粘贴SSH公钥内容"}
+                    rows={4}
+                  />
+                )}
+                {newHost.sshAuthType === 'public_key' && (
+                  <input
+                    type="password"
+                    value={newHost.sshPassword || ''}
+                    onChange={(e) => setNewHost({ ...newHost, sshPassword: e.target.value })}
+                    className="w-full bg-[#020617] border border-white/10 rounded-lg px-3 py-2 text-white text-sm mt-2"
+                    placeholder="请输入SSH密码(用于部署公钥)"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm text-slate-400 mb-1">Rack</label>
@@ -746,7 +968,7 @@ export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
                   <option value="Gateway">Gateway</option>
                 </select>
               </div>
-              <div className="flex justify-end gap-2 pt-4">
+              <div className="flex justify-end gap-2 pt-4 mt-auto flex-shrink-0">
                 <button
                   onClick={() => setShowAddModal(false)}
                   className="px-4 py-2 bg-white/5 text-white rounded-lg text-sm hover:bg-white/10"
@@ -800,10 +1022,137 @@ export default function HostMgt({ activeSubView }: { activeSubView?: string }) {
         </div>
       )}
 
+      {/* Notification - 固定显示在最外层，不受布局变化影响 */}
+      {notification && (
+        <div className={cn(
+          "fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg flex items-center min-w-[200px]",
+          notification.type === 'success' ? 'bg-emerald-500/90 text-white' :
+          notification.type === 'error' ? 'bg-rose-500/90 text-white' :
+          'bg-blue-500/90 text-white'
+        )}>
+          {notification.type === 'success' && <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />}
+          {notification.type === 'error' && <AlertTriangle className="w-5 h-5 mr-2 flex-shrink-0" />}
+          <span className="text-sm font-medium">{notification.message}</span>
+        </div>
+      )}
+
+      {/* 主机详情弹窗 */}
+      {showHostDetail && selectedHostDetail && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="glass-panel p-6 rounded-2xl w-[500px] max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-white">主机详情</h3>
+              <button onClick={() => setShowHostDetail(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {/* 主机基本信息 */}
+            <div className="mb-6">
+              <h4 className="text-sm font-bold text-[#00ff9d] mb-3">基本信息</h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-slate-400">主机名:</span>
+                  <span className="ml-2 text-white">{selectedHostDetail.hostname || selectedHostDetail.name}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">IP地址:</span>
+                  <span className="ml-2 text-white">{selectedHostDetail.ip}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">角色:</span>
+                  <span className="ml-2 text-white">{selectedHostDetail.role}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">状态:</span>
+                  <span className={cn(
+                    "ml-2 px-2 py-0.5 rounded text-xs font-bold",
+                    selectedHostDetail.status === 'Running' ? "bg-emerald-500/20 text-emerald-500" :
+                    selectedHostDetail.status === 'Maintenance' ? "bg-amber-500/20 text-amber-500" :
+                    "bg-slate-500/20 text-slate-400"
+                  )}>
+                    {selectedHostDetail.status}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400">CPU:</span>
+                  <span className="ml-2 text-white">{selectedHostDetail.cores} 核</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">内存:</span>
+                  <span className="ml-2 text-white">{selectedHostDetail.memory || selectedHostDetail.mem}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">磁盘:</span>
+                  <span className="ml-2 text-white">{selectedHostDetail.disk || selectedHostDetail.totalDisk + 'GB'}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400">机架:</span>
+                  <span className="ml-2 text-white">{selectedHostDetail.rackInfo || selectedHostDetail.rack}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 操作按钮 */}
+            <div className="mb-6">
+              <h4 className="text-sm font-bold text-[#00ff9d] mb-3">运维操作</h4>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleHostAction(selectedHostDetail.hostname || selectedHostDetail.name || '', 'start')}
+                  disabled={loading}
+                  className="px-3 py-2 bg-emerald-500/20 text-emerald-500 rounded-lg text-sm hover:bg-emerald-500/30 disabled:opacity-50 flex items-center"
+                >
+                  <Play className="w-4 h-4 mr-1" /> 启动
+                </button>
+                <button
+                  onClick={() => handleHostAction(selectedHostDetail.hostname || selectedHostDetail.name || '', 'stop')}
+                  disabled={loading}
+                  className="px-3 py-2 bg-rose-500/20 text-rose-500 rounded-lg text-sm hover:bg-rose-500/30 disabled:opacity-50 flex items-center"
+                >
+                  <Square className="w-4 h-4 mr-1" /> 停止
+                </button>
+                <button
+                  onClick={() => handleHostAction(selectedHostDetail.hostname || selectedHostDetail.name || '', 'restart')}
+                  disabled={loading}
+                  className="px-3 py-2 bg-blue-500/20 text-blue-500 rounded-lg text-sm hover:bg-blue-500/30 disabled:opacity-50 flex items-center"
+                >
+                  <RefreshCcw className="w-4 h-4 mr-1" /> 重启
+                </button>
+                <button
+                  onClick={() => handleHostAction(selectedHostDetail.hostname || selectedHostDetail.name || '', 'maintenance')}
+                  disabled={loading}
+                  className="px-3 py-2 bg-amber-500/20 text-amber-500 rounded-lg text-sm hover:bg-amber-500/30 disabled:opacity-50 flex items-center"
+                >
+                  <ShieldCheck className="w-4 h-4 mr-1" /> 维护
+                </button>
+                <button
+                  onClick={() => handleHostAction(selectedHostDetail.hostname || selectedHostDetail.name || '', 'offline')}
+                  disabled={loading}
+                  className="px-3 py-2 bg-purple-500/20 text-purple-500 rounded-lg text-sm hover:bg-purple-500/30 disabled:opacity-50 flex items-center"
+                >
+                  <Settings2 className="w-4 h-4 mr-1" /> 下线
+                </button>
+              </div>
+            </div>
+
+            {/* 删除按钮 */}
+            <div className="pt-4 border-t border-white/10">
+              <button
+                onClick={() => handleHostAction(selectedHostDetail.hostname || selectedHostDetail.name || '', 'delete')}
+                disabled={loading}
+                className="px-4 py-2 bg-rose-500/20 text-rose-500 rounded-lg text-sm hover:bg-rose-500/30 disabled:opacity-50 flex items-center"
+              >
+                <Trash2 className="w-4 h-4 mr-2" /> 删除主机
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {activeSubView === '资源监控' && renderResourceMonitoring()}
       {activeSubView === '集群拓扑' && renderClusterTopology()}
       {activeSubView === '硬件诊断' && renderHardwareDiagnosis()}
-      {(!activeSubView || activeSubView === '') && renderOverview()}
+      {(activeSubView === '' || activeSubView === '主机列表' || !activeSubView) && renderOverview()}
     </>
   );
 }

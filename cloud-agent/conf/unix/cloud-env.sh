@@ -17,8 +17,8 @@
 # given through environment variable
 
 cloud_PASSPHRASE="DEV"
-export PATH=$PATH:/var/lib/cloud-agent
-export PYTHONPATH=/usr/lib/cloud-agent/lib:$PYTHONPATH
+export PATH=$PATH:/usr/local/cloud-agent
+export PYTHONPATH=/usr/local/cloud-agent:$PYTHONPATH
 
 # customize python binary for cloud
 # export PYTHON=/usr/bin/python2

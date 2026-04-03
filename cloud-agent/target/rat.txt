@@ -1,0 +1,275 @@
+
+*****************************************************
+Summary
+-------
+Generated at: 2026-03-30T14:22:29+08:00
+
+Notes: 0
+Binaries: 11
+Archives: 0
+Standards: 174
+
+Apache Licensed: 173
+Generated Documents: 0
+
+JavaDocs are generated, thus a license header is optional.
+Generated files do not require license headers.
+
+1 Unknown Licenses
+
+*****************************************************
+
+Files with unapproved licenses:
+
+  C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/devops.py
+
+*****************************************************
+
+*****************************************************
+  Files with Apache License headers will be marked AL
+  Binary files (which do not require any license headers) will be marked B
+  Compressed archives will be marked A
+  Notices, licenses etc. will be marked N
+  AL    C:/yj/CloudRealm/cloud-agent/conf/unix/agent-multiplier.py
+  AL    C:/yj/CloudRealm/cloud-agent/conf/unix/cloud-agent
+  AL    C:/yj/CloudRealm/cloud-agent/conf/unix/cloud-agent.ini
+  AL    C:/yj/CloudRealm/cloud-agent/conf/unix/cloud-env.sh
+  AL    C:/yj/CloudRealm/cloud-agent/conf/unix/cloud-sudo.sh
+  AL    C:/yj/CloudRealm/cloud-agent/conf/unix/install-helper.sh
+  AL    C:/yj/CloudRealm/cloud-agent/conf/unix/upgrade_agent_configs.py
+  AL    C:/yj/CloudRealm/cloud-agent/conf/windows/cloud-agent.cmd
+  AL    C:/yj/CloudRealm/cloud-agent/conf/windows/cloud-agent.ini
+  AL    C:/yj/CloudRealm/cloud-agent/conf/windows/cloud-agent.ps1
+  AL    C:/yj/CloudRealm/cloud-agent/conf/windows/cloud-env.cmd
+  AL    C:/yj/CloudRealm/cloud-agent/conf/windows/createservice.ps1
+  AL    C:/yj/CloudRealm/cloud-agent/conf/windows/service_wrapper.py
+  AL    C:/yj/CloudRealm/cloud-agent/etc/init/cloud-agent.conf
+  AL    C:/yj/CloudRealm/cloud-agent/etc/init.d/cloud-agent
+  AL    C:/yj/CloudRealm/cloud-agent/pom.xml
+  AL    C:/yj/CloudRealm/cloud-agent/pom.xml.versionsBackup
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/java/com/cloudrealm/agent/tools/jce/JcePolicyInfo.java
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/java/com/cloudrealm/agent/tools/zk/ZkAcl.java
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/java/com/cloudrealm/agent/tools/zk/ZkConnection.java
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/java/com/cloudrealm/agent/tools/zk/ZkMigrator.java
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/java/com/cloudrealm/agent/tools/zk/ZkPathPattern.java
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/package/choco/chocolateyinstall.ps1
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/package/choco/chocolateyuninstall.ps1
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/package/deb/control/control
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/package/deb/control/postinst
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/package/deb/control/postrm
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/package/deb/control/preinst
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/package/deb/control/prerm
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/package/dependencies.properties
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/package/rpm/postinstall.sh
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/package/rpm/postremove.sh
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/package/rpm/posttrans_agent.sh
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/package/rpm/preinstall.sh
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/package/rpm/preremove.sh
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/ActionQueue.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/ActualConfigHandler.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/AgentException.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/alerts/ams_alert.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/alerts/base_alert.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/alerts/collector.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/alerts/metric_alert.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/alerts/port_alert.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/alerts/recovery_alert.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/alerts/script_alert.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/alerts/web_alert.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/alerts/__init__.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/AlertSchedulerHandler.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/AlertStatusReporter.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/BackgroundCommandExecutionHandle.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/cloudAgent.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/cloudConfig.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/ClusterAlertDefinitionsCache.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/ClusterCache.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/ClusterConfigurationCache.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/ClusterHostLevelParamsCache.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/ClusterMetadataCache.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/ClusterTopologyCache.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/CommandHooksOrchestrator.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/CommandStatusDict.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/CommandStatusReporter.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/ComponentStatusExecutor.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/ComponentVersionReporter.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/ConfigurationBuilder.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/Constants.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/CustomServiceOrchestrator.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/DataCleaner.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/debug.py
+ !????? C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/devops.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/ExitHelper.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/Facter.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/FileCache.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/Grep.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/Hardware.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/HeartbeatHandlers.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/HeartbeatThread.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/HostCheckReportFileHandler.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/HostCleanup.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/HostInfo.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/hostname.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/HostStatusReporter.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/InitializerModule.py
+  B     C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/listeners/AgentActionsListener.py
+  B     C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/listeners/AlertDefinitionsEventListener.py
+  B     C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/listeners/CommandsEventListener.py
+  B     C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/listeners/ConfigurationEventListener.py
+  B     C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/listeners/EncryptionKeyListener.py
+  B     C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/listeners/HostLevelParamsEventListener.py
+  B     C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/listeners/MetadataEventListener.py
+  B     C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/listeners/ServerResponsesListener.py
+  B     C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/listeners/TopologyEventListener.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/listeners/__init__.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/LiveStatus.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/main.py
+  B     C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/models/commands.py
+  B     C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/models/hooks.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/models/__init__.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/NetUtil.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/PingPortListener.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/PythonExecutor.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/RecoveryManager.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/Register.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/RemoteDebugUtils.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/security.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/StaleAlertsMonitor.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/Utils.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/__init__.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/setup.cfg
+  AL    C:/yj/CloudRealm/cloud-agent/src/main/python/setup.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/packages/tarball/all.xml
+  AL    C:/yj/CloudRealm/cloud-agent/src/packages/windows-choco.xml
+  AL    C:/yj/CloudRealm/cloud-agent/src/packages/windows.xml
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/java/com/cloudrealm/agent/tools/zk/ZkMigratorTest.java
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/BaseStompServerTestCase.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/examples/ControllerTester.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/examples/debug_testcase_example.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestActionQueue.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestActualConfigHandler.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestAgentActions.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestAgentStompResponses.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestAlertCollector.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestAlerts.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestAlertSchedulerHandler.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestAmsAlert.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestASTChecker.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestBaseAlert.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestCertGeneration.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestcloudAgent.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestcloudConfig.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestClusterConfigurationCache.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestCommandHooksOrchestrator.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestCommandStatusDict.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestConfigurationBuilder.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestCustomServiceOrchestrator.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestDataCleaner.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestFileCache.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestGrep.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestHardware.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestHostCheckReportFileHandler.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestHostCleanup.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestHostInfo.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestHostname.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestKerberosCommon.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestLiveStatus.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestMain.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestMetricAlert.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestNetUtil.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestPingPortListener.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestPortAlert.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestPythonExecutor.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestRecoveryManager.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestRegistration.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestScriptAlert.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestSecurity.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/TestShell.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/cloud_agent/winpwd.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestContentSources.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestDatanodeHelper.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestDataStructureUtils.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestDirectoryResource.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestEncryption.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestExecuteHadoopResource.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestExecuteResource.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestFcntlBasedProcessLock.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestFileResource.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestFileSystem.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestGetPathFromUrl.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestGroupResource.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestLibraryFunctions.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestLinkResource.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestMonitorWebserverResource.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestNamenodeHaUtils.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestPackageResource.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestPropertiesFileResource.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestRepositoryResource.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestScript.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestSecurityCommons.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestServiceResource.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestSubstituteVars.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestTarArchive.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestTemplateConfigResource.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestUserResource.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestUtils.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/resource_management/TestXmlConfigResource.py
+  AL    C:/yj/CloudRealm/cloud-agent/src/test/python/unitTests.py
+ 
+*****************************************************
+
+ Printing headers for text files without a valid license header...
+ 
+=====================================================
+== File: C:/yj/CloudRealm/cloud-agent/src/main/python/cloud_agent/devops.py
+=====================================================
+# main.py
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List, Optional
+import httpx
+import subprocess
+from datetime import datetime
+import sqlite3
+
+app = FastAPI(title="运维管理系统API")
+
+# 配置CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 数据库初始化
+def init_db():
+    conn = sqlite3.connect('ops.db')
+    cursor = conn.cursor()
+
+    # 创建任务表
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        schedule TEXT NOT NULL,
+        last_run TEXT,
+        next_run TEXT,
+        status TEXT NOT NULL,
+        progress INTEGER NOT NULL,
+        owner TEXT NOT NULL,
+        workflow TEXT
+    )
+    ''')
+
+    # 创建告警规则表
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS alert_rules (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        condition TEXT NOT NULL,
+        duration TEXT NOT NULL,
